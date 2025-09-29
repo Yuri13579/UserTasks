@@ -6,25 +6,20 @@ namespace TaskRotationApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController(TaskAssignmentService service) : ControllerBase
 {
-    private readonly TaskAssignmentService _service;
-
-    public UsersController(TaskAssignmentService service)
-    {
-        _service = service;
-    }
-
     [HttpGet]
     public ActionResult<IReadOnlyCollection<UserResponse>> GetUsers()
     {
-        return Ok(_service.GetUsers());
+        return Ok(service.GetUsers());
+
     }
 
     [HttpGet("{id:guid}")]
     public ActionResult<UserResponse> GetUser(Guid id)
     {
-        var user = _service.GetUser(id);
+        var user = service.GetUser(id);
+
         if (user is null)
         {
             return NotFound();
@@ -36,7 +31,9 @@ public class UsersController : ControllerBase
     [HttpPost]
     public ActionResult<UserResponse> CreateUser([FromBody] CreateUserRequest request)
     {
-        var (success, error, user) = _service.CreateUser(request.Name);
+
+        var (success, error, user) = service.CreateUser(request.Name);
+
         if (!success)
         {
             return string.Equals(error, "A user with the same name already exists.", StringComparison.Ordinal)
@@ -50,7 +47,8 @@ public class UsersController : ControllerBase
     [HttpDelete("{id:guid}")]
     public IActionResult DeleteUser(Guid id)
     {
-        var (success, error) = _service.DeleteUser(id);
+        var (success, error) = service.DeleteUser(id);
+
         if (!success)
         {
             return NotFound(new { message = error });

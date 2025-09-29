@@ -7,10 +7,10 @@ namespace TaskRotationApi.Storage;
 /// API controllers and background scheduler do not step on each other.
 /// </summary>
 public class InMemoryDataStore
-{
+{    
     private readonly object _sync = new();
-    private readonly List<User> _users = new();
-    private readonly List<TaskItem> _tasks = new();
+    private readonly List<User> _users = [];
+    private readonly List<TaskItem> _tasks = [];
 
     public T Read<T>(Func<IReadOnlyList<User>, IReadOnlyList<TaskItem>, T> reader)
     {

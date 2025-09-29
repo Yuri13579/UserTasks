@@ -52,3 +52,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+.vs/TaskRotationApi/FileContentIndex/c316191e-42b2-42ba-822e-8a13ea7208a3.vsidx
+.vs/TaskRotationApi/CopilotIndices/17.14.670.39694/SemanticSymbols.db-wal
+.vs/TaskRotationApi/CopilotIndices/17.14.670.39694/CodeChunks.db
+.vs/TaskRotationApi/CopilotIndices/17.14.670.39694/CodeChunks.db-shm
+.vs/TaskRotationApi/CopilotIndices/17.14.670.39694/CodeChunks.db-wal
+.vs/TaskRotationApi/CopilotIndices/17.14.670.39694/SemanticSymbols.db
+.vs/TaskRotationApi/CopilotIndices/17.14.670.39694/SemanticSymbols.db-shm

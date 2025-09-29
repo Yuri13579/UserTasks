@@ -15,7 +15,7 @@ public class TaskItem
 
     public Guid? PreviousUserId { get; set; }
 
-    public List<Guid> AssignmentHistory { get; } = new();
+    public List<Guid> AssignmentHistory { get; } = [];
 
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
 }

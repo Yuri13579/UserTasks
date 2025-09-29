@@ -9,21 +9,12 @@ namespace TaskRotationApi.Services;
 /// Contains all domain rules for creating users, tasks and orchestrating the
 /// periodic reassignments.
 /// </summary>
-public class TaskAssignmentService
+public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignmentService> logger)
 {
-    private readonly InMemoryDataStore _store;
-    private readonly ILogger<TaskAssignmentService> _logger;
-
-    public TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignmentService> logger)
-    {
-        _store = store;
-        _logger = logger;
-    }
-
     public IReadOnlyCollection<UserResponse> GetUsers()
     {
-        return _store.Read((users, tasks) =>
-        {
+        return store.Read((users, tasks) =>
+       {
             var response = new List<UserResponse>(users.Count);
             foreach (var user in users)
             {
@@ -36,8 +27,8 @@ public class TaskAssignmentService
 
     public UserResponse? GetUser(Guid id)
     {
-        return _store.Read((users, tasks) =>
-        {
+        return store.Read((users, tasks) =>
+       {
             var user = users.FirstOrDefault(u => u.Id == id);
             return user is null ? null : MapUser(user, tasks);
         });
@@ -51,7 +42,7 @@ public class TaskAssignmentService
             return (false, "Name is required.", null);
         }
 
-        return _store.Write((users, tasks) =>
+        return store.Write((users, tasks) =>
         {
             if (users.Any(u => string.Equals(u.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
             {
@@ -78,7 +69,7 @@ public class TaskAssignmentService
 
     public (bool Success, string? Error) DeleteUser(Guid id)
     {
-        return _store.Write((users, tasks) =>
+        return store.Write((users, tasks) =>
         {
             var user = users.FirstOrDefault(u => u.Id == id);
             if (user is null)
@@ -120,12 +111,12 @@ public class TaskAssignmentService
 
     public IReadOnlyCollection<TaskResponse> GetTasks()
     {
-        return _store.Read((users, tasks) => tasks.Select(t => MapTask(t, users)).ToList());
+       return store.Read((users, tasks) => tasks.Select(t => MapTask(t, users)).ToList());
     }
 
     public TaskResponse? GetTask(Guid id)
     {
-        return _store.Read((users, tasks) =>
+       return store.Read((users, tasks) =>
         {
             var task = tasks.FirstOrDefault(t => t.Id == id);
             return task is null ? null : MapTask(task, users);
@@ -139,8 +130,7 @@ public class TaskAssignmentService
         {
             return (false, "Title is required.", null);
         }
-
-        return _store.Write((users, tasks) =>
+        return store.Write((users, tasks) =>
         {
             if (tasks.Any(t => string.Equals(t.Title, trimmed, StringComparison.OrdinalIgnoreCase)))
             {
@@ -166,7 +156,7 @@ public class TaskAssignmentService
     /// </summary>
     public void RotateAssignments()
     {
-        _store.Write((users, tasks) =>
+        store.Write((users, tasks) =>
         {
             if (users.Count == 0)
             {
@@ -199,7 +189,7 @@ public class TaskAssignmentService
                 }
                 else if (previousAssignee != task.AssignedUserId)
                 {
-                    _logger.LogInformation("Task {TaskTitle} moved from {PreviousUser} to {CurrentUser}", task.Title, previousAssignee, task.AssignedUserId);
+                    logger.LogInformation("Task {TaskTitle} moved from {PreviousUser} to {CurrentUser}", task.Title, previousAssignee, task.AssignedUserId);
                 }
 
                 TryFinalizeTask(task, users);
