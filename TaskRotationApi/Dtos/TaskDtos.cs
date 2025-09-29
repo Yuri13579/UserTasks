@@ -4,7 +4,7 @@ using TaskRotationApi.Models;
 namespace TaskRotationApi.Dtos;
 
 public record CreateTaskRequest(
-    [Required, MinLength(1)] string Title
+    [Required] [MinLength(1)] string Title
 );
 
 public record TaskResponse(

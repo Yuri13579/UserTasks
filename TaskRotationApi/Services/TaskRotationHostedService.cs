@@ -32,7 +32,7 @@ public class TaskRotationHostedService : BackgroundService
 
         try
         {
-            await using var timer = new PeriodicTimer(_interval);
+            using var timer = new PeriodicTimer(_interval);
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
                 SafeRotate();

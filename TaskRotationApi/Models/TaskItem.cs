@@ -1,7 +1,7 @@
 namespace TaskRotationApi.Models;
 
 /// <summary>
-/// Represents a unit of work to be transferred between users.
+///     Represents a unit of work to be transferred between users.
 /// </summary>
 public class TaskItem
 {

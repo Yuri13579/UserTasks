@@ -3,14 +3,14 @@ using TaskRotationApi.Models;
 namespace TaskRotationApi.Storage;
 
 /// <summary>
-/// Small helper that keeps all data in memory and protects it with a lock so the
-/// API controllers and background scheduler do not step on each other.
+///     Small helper that keeps all data in memory and protects it with a lock so the
+///     API controllers and background scheduler do not step on each other.
 /// </summary>
 public class InMemoryDataStore
-{    
+{
     private readonly object _sync = new();
-    private readonly List<User> _users = [];
     private readonly List<TaskItem> _tasks = [];
+    private readonly List<User> _users = [];
 
     public T Read<T>(Func<IReadOnlyList<User>, IReadOnlyList<TaskItem>, T> reader)
     {

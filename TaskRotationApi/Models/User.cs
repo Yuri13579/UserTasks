@@ -1,7 +1,7 @@
 namespace TaskRotationApi.Models;
 
 /// <summary>
-/// Represents a user that can have tasks assigned.
+///     Represents a user that can have tasks assigned.
 /// </summary>
 public class User
 {

@@ -18,10 +18,7 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
     public ActionResult<TaskResponse> GetTask(Guid id)
     {
         var task = service.GetTask(id);
-       if (task is null)
-        {
-            return NotFound();
-        }
+        if (task is null) return NotFound();
 
         return Ok(task);
     }
@@ -31,11 +28,9 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
     {
         var (success, error, task) = service.CreateTask(request.Title);
         if (!success)
-        {
             return string.Equals(error, "A task with the same title already exists.", StringComparison.Ordinal)
                 ? Conflict(new { message = error })
                 : BadRequest(new { message = error });
-        }
 
         return CreatedAtAction(nameof(GetTask), new { id = task!.Id }, task);
     }
