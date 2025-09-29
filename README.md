@@ -1,55 +1,73 @@
 # Task Rotation API
 
-This repository contains a minimal ASP.NET Core Web API that manages users and tasks and enforces the rotation rules described in the assignment. Everything is kept in memory to keep the project easy to run and reason about.
+This ASP.NET Core Web API manages users and tasks that automatically rotate between available users while respecting capacity limits.
 
-## Running the API
+## Getting started
 
 1. Install the .NET 8 SDK.
-2. Open `TaskRotationApi.sln` in Visual Studio (or your preferred IDE) to explore and run the project, or use the CLI commands below from the repository root.
-3. Restore dependencies and run the application:
+2. Restore dependencies and run the application from the repository root:
 
    ```bash
    dotnet restore TaskRotationApi
    dotnet run --project TaskRotationApi
    ```
 
-4. The API listens on the default ASP.NET ports. When running locally you can browse the interactive Swagger UI at `https://localhost:7091/swagger` (or the HTTP port shown in the console output).
+3. The API is available immediately at the printed HTTP/HTTPS URLs. Swagger UI is always enabled at `https://localhost:7091/swagger` (adjust the port to match the console output).
 
-### Configuration
+## Configuration
 
-The automatic task rotation runs every two minutes by default. You can override the interval (for example during debugging) by adding the following setting to `appsettings.Development.json` or by setting an environment variable:
+The rotation interval is configured via `appsettings.json`:
 
 ```json
 {
   "TaskRotation": {
-    "IntervalSeconds": 30
+    "IntervalSeconds": 120
   }
 }
 ```
 
-## Available endpoints
+Override the value in `appsettings.Development.json` or with the `TaskRotation__IntervalSeconds` environment variable to speed up local testing.
 
-All routes are prefixed with `/api`.
+## API endpoints
+
+All endpoints are available under the `/api` prefix.
 
 ### Users
 
-- `GET /api/users` – list all users with the number of currently assigned tasks.
-- `GET /api/users/{id}` – get a single user.
-- `POST /api/users` – create a user. Body: `{ "name": "Alice" }`.
-- `DELETE /api/users/{id}` – delete a user. Any tasks currently assigned to the user move back to the waiting pool.
+- `GET /api/users` – Returns all users with current assignment statistics.
+- `GET /api/users/{id}` – Returns a single user or 404 when missing.
+- `POST /api/users` – Creates a user. Body: `{ "name": "Alice" }`. Validates length (1-50 chars) and uniqueness.
+- `DELETE /api/users/{id}` – Deletes a user, releases their tasks back to the waiting pool and clears previous assignee references.
 
 ### Tasks
 
-- `GET /api/tasks` – list all tasks including their state, assignee (if any) and history.
-- `GET /api/tasks/{id}` – get a single task.
-- `POST /api/tasks` – create a task. Body: `{ "title": "Write documentation" }`.
+- `GET /api/tasks` – Returns all tasks with status, assignee details, visit count and assignment history.
+- `GET /api/tasks/{id}` – Returns a single task or 404 when missing.
+- `POST /api/tasks` – Creates a task. Body: `{ "title": "Write documentation" }`. Titles must be unique and 1-100 chars long.
 
-## Behaviour summary
+### Example requests
 
-- User names and task titles must be unique.
-- Each user can work on up to three tasks at a time.
-- Tasks are assigned automatically on creation if a suitable user exists. Otherwise, they remain in the waiting state.
-- Every two minutes tasks are rotated to a different user respecting the rules defined in the brief. When no user is available the task returns to the waiting state.
-- A task is marked as completed once it has been assigned to every existing user at least once. Completed tasks are no longer reassigned.
+```bash
+curl -X POST https://localhost:7091/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice"}'
 
-The code includes inline comments and logging explaining the key decisions.
+curl -X POST https://localhost:7091/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Prepare report"}'
+
+curl https://localhost:7091/api/tasks
+```
+
+## Rotation rules
+
+- Each user can hold at most three active tasks at a time.
+- When a task is created it is immediately assigned to a random eligible user, if one exists. Otherwise the task stays in the `Waiting` state.
+- Every rotation cycle (default every 120 seconds) all non-completed tasks are considered:
+  - A new assignee must not be the current or previous user, and must still have free capacity.
+  - If no candidates exist, the task returns to the `Waiting` state until capacity frees up.
+  - Each assignment appends to the task's history.
+- Once a task has visited every current user at least once it is marked as `Completed` and will no longer rotate, even if new users are added later.
+- When a user is deleted, their active tasks return to `Waiting`, previous-user references are cleared, and the service immediately attempts to reassign waiting tasks.
+
+Run `dotnet run --project TaskRotationApi` to experience the behaviour out-of-the-box.

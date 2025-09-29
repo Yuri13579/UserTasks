@@ -12,11 +12,13 @@ public class InMemoryDataStore
     private readonly List<TaskItem> _tasks = [];
     private readonly List<User> _users = [];
 
-    public T Read<T>(Func<IReadOnlyList<User>, IReadOnlyList<TaskItem>, T> reader)
+    public T Read<T>(Func<List<User>, List<TaskItem>, T> reader)
     {
         lock (_sync)
         {
-            return reader(_users, _tasks);
+            var usersCopy = _users.ToList();
+            var tasksCopy = _tasks.ToList();
+            return reader(usersCopy, tasksCopy);
         }
     }
 
