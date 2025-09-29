@@ -9,15 +9,17 @@ namespace TaskRotationApi.Controllers;
 public class UsersController(TaskAssignmentService service) : ControllerBase
 {
     /// <summary>
-    /// Returns all registered users.
+    ///     Returns all registered users.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserResponse>))]
     public ActionResult<IReadOnlyCollection<UserResponse>> GetUsers()
-        => Ok(service.GetUsers());
+    {
+        return Ok(service.GetUsers());
+    }
 
     /// <summary>
-    /// Returns a single user by identifier.
+    ///     Returns a single user by identifier.
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserResponse))]
@@ -31,7 +33,7 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new user.
+    ///     Creates a new user.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(UserResponse))]
@@ -42,15 +44,13 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
         var result = service.CreateUser(request.Name);
 
         if (!result.Success)
-        {
             return MapError<UserResponse>(new ServiceResult(result.Success, result.Code, result.Error));
-        }
 
         return CreatedAtAction(nameof(GetUser), new { id = result.Value!.Id }, result.Value);
     }
 
     /// <summary>
-    /// Deletes a user and releases their tasks.
+    ///     Deletes a user and releases their tasks.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -58,29 +58,32 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
     public IActionResult DeleteUser(Guid id)
     {
         var result = service.DeleteUser(id);
-        if (!result.Success)
-        {
-            return MapError(result);
-        }
+        if (!result.Success) return MapError(result);
 
         return NoContent();
     }
 
-    private static ActionResult<T> MapError<T>(ServiceResult result) => result.Code switch
+    private static ActionResult<T> MapError<T>(ServiceResult result)
     {
-        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
-        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
-        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
-        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
-        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
-    };
+        return result.Code switch
+        {
+            ErrorCode.Duplicate => new ConflictObjectResult(new { message = result.Error }),
+            ErrorCode.NotFound => new NotFoundObjectResult(new { message = result.Error }),
+            ErrorCode.Invalid => new BadRequestObjectResult(new { message = result.Error }),
+            ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+            _ => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
+        };
+    }
 
-    private static IActionResult MapError(ServiceResult result) => result.Code switch
+    private static IActionResult MapError(ServiceResult result)
     {
-        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
-        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
-        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
-        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
-        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
-    };
+        return result.Code switch
+        {
+            ErrorCode.Duplicate => new ConflictObjectResult(new { message = result.Error }),
+            ErrorCode.NotFound => new NotFoundObjectResult(new { message = result.Error }),
+            ErrorCode.Invalid => new BadRequestObjectResult(new { message = result.Error }),
+            ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+            _ => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
+        };
+    }
 }

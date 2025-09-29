@@ -6,8 +6,8 @@ using TaskRotationApi.Storage;
 namespace TaskRotationApi.Services;
 
 /// <summary>
-/// Contains all domain rules for creating users, tasks and orchestrating the
-/// periodic reassignments.
+///     Contains all domain rules for creating users, tasks and orchestrating the
+///     periodic reassignments.
 /// </summary>
 public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignmentService> logger)
 {
@@ -16,10 +16,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         return store.Read((users, tasks) =>
         {
             var response = new List<UserResponse>(users.Count);
-            foreach (var user in users)
-            {
-                response.Add(MapUser(user, tasks));
-            }
+            foreach (var user in users) response.Add(MapUser(user, tasks));
 
             return response;
         });
@@ -38,16 +35,13 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     {
         var trimmed = name?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(trimmed))
-        {
             return ServiceResult<UserResponse>.Failure(ErrorCode.Invalid, "Name is required.");
-        }
 
         return store.Write((users, tasks) =>
         {
             if (users.Any(u => string.Equals(u.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
-            {
-                return ServiceResult<UserResponse>.Failure(ErrorCode.Duplicate, "A user with the same name already exists.");
-            }
+                return ServiceResult<UserResponse>.Failure(ErrorCode.Duplicate,
+                    "A user with the same name already exists.");
 
             var user = new User
             {
@@ -59,18 +53,14 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
             var newlyAssigned = 0;
             foreach (var task in tasks.Where(t => t.State != TaskState.Completed && t.AssignedUserId is null).ToList())
             {
-                if (TryAssignTask(task, users, tasks))
-                {
-                    newlyAssigned++;
-                }
+                if (TryAssignTask(task, users, tasks)) newlyAssigned++;
 
                 TryFinalizeTask(task, users);
             }
 
             if (newlyAssigned > 0)
-            {
-                logger.LogInformation("Assigned {TaskCount} waiting tasks after adding user {UserId}", newlyAssigned, user.Id);
-            }
+                logger.LogInformation("Assigned {TaskCount} waiting tasks after adding user {UserId}", newlyAssigned,
+                    user.Id);
 
             return ServiceResult<UserResponse>.SuccessResult(MapUser(user, tasks));
         });
@@ -81,10 +71,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         return store.Write((users, tasks) =>
         {
             var user = users.FirstOrDefault(u => u.Id == id);
-            if (user is null)
-            {
-                return ServiceResult.Failure(ErrorCode.NotFound, "User not found.");
-            }
+            if (user is null) return ServiceResult.Failure(ErrorCode.NotFound, "User not found.");
 
             users.Remove(user);
 
@@ -98,32 +85,24 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
                     waitingCount++;
                 }
 
-                if (task.PreviousUserId == id)
-                {
-                    task.PreviousUserId = null;
-                }
+                if (task.PreviousUserId == id) task.PreviousUserId = null;
             }
 
             if (waitingCount > 0)
-            {
-                logger.LogInformation("User {UserId} deleted. {TaskCount} tasks returned to waiting state.", id, waitingCount);
-            }
+                logger.LogInformation("User {UserId} deleted. {TaskCount} tasks returned to waiting state.", id,
+                    waitingCount);
 
             var reassigned = 0;
             foreach (var task in tasks.Where(t => t.State != TaskState.Completed && t.AssignedUserId is null).ToList())
             {
-                if (TryAssignTask(task, users, tasks))
-                {
-                    reassigned++;
-                }
+                if (TryAssignTask(task, users, tasks)) reassigned++;
 
                 TryFinalizeTask(task, users);
             }
 
             if (reassigned > 0)
-            {
-                logger.LogInformation("Reassigned {TaskCount} waiting tasks after deleting user {UserId}.", reassigned, id);
-            }
+                logger.LogInformation("Reassigned {TaskCount} waiting tasks after deleting user {UserId}.", reassigned,
+                    id);
 
             return ServiceResult.SuccessResult();
         });
@@ -147,16 +126,13 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     {
         var trimmed = title?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(trimmed))
-        {
             return ServiceResult<TaskResponse>.Failure(ErrorCode.Invalid, "Title is required.");
-        }
 
         return store.Write((users, tasks) =>
         {
             if (tasks.Any(t => string.Equals(t.Title, trimmed, StringComparison.OrdinalIgnoreCase)))
-            {
-                return ServiceResult<TaskResponse>.Failure(ErrorCode.Duplicate, "A task with the same title already exists.");
-            }
+                return ServiceResult<TaskResponse>.Failure(ErrorCode.Duplicate,
+                    "A task with the same title already exists.");
 
             var task = new TaskItem
             {
@@ -173,7 +149,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     }
 
     /// <summary>
-    /// Called by the hosted service every two minutes.
+    ///     Called by the hosted service every two minutes.
     /// </summary>
     public IReadOnlyCollection<(Guid TaskId, Guid? FromUserId, Guid? ToUserId)> RotateAssignments()
     {
@@ -185,15 +161,9 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
             {
                 foreach (var task in tasks)
                 {
-                    if (task.State == TaskState.Completed)
-                    {
-                        continue;
-                    }
+                    if (task.State == TaskState.Completed) continue;
 
-                    if (task.AssignedUserId is not null)
-                    {
-                        changes.Add((task.Id, task.AssignedUserId, null));
-                    }
+                    if (task.AssignedUserId is not null) changes.Add((task.Id, task.AssignedUserId, null));
 
                     task.AssignedUserId = null;
                     task.PreviousUserId = null;
@@ -205,20 +175,14 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
 
             foreach (var task in tasks)
             {
-                if (task.State == TaskState.Completed)
-                {
-                    continue;
-                }
+                if (task.State == TaskState.Completed) continue;
 
                 var previousAssignee = task.AssignedUserId;
-                var assigned = TryAssignTask(task, users, tasks, forceDifferent: true);
+                var assigned = TryAssignTask(task, users, tasks, true);
 
                 if (!assigned)
                 {
-                    if (previousAssignee is not null)
-                    {
-                        changes.Add((task.Id, previousAssignee, null));
-                    }
+                    if (previousAssignee is not null) changes.Add((task.Id, previousAssignee, null));
 
                     task.PreviousUserId = previousAssignee;
                     task.AssignedUserId = null;
@@ -236,25 +200,17 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
-    private bool TryAssignTask(TaskItem task, IReadOnlyList<User> users, IReadOnlyList<TaskItem> allTasks, bool forceDifferent = false)
+    private bool TryAssignTask(TaskItem task, IReadOnlyList<User> users, IReadOnlyList<TaskItem> allTasks,
+        bool forceDifferent = false)
     {
-        if (task.State == TaskState.Completed || users.Count == 0)
-        {
-            return false;
-        }
+        if (task.State == TaskState.Completed || users.Count == 0) return false;
 
         var activeCounts = new Dictionary<Guid, int>();
         foreach (var other in allTasks)
         {
-            if (other.State == TaskState.Completed || other.AssignedUserId is null)
-            {
-                continue;
-            }
+            if (other.State == TaskState.Completed || other.AssignedUserId is null) continue;
 
-            if (!activeCounts.TryGetValue(other.AssignedUserId.Value, out var count))
-            {
-                count = 0;
-            }
+            if (!activeCounts.TryGetValue(other.AssignedUserId.Value, out var count)) count = 0;
 
             activeCounts[other.AssignedUserId.Value] = count + 1;
         }
@@ -263,28 +219,16 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         foreach (var user in users)
         {
             activeCounts.TryGetValue(user.Id, out var count);
-            if (count >= 3)
-            {
-                continue;
-            }
+            if (count >= 3) continue;
 
-            if (forceDifferent && task.AssignedUserId == user.Id)
-            {
-                continue;
-            }
+            if (forceDifferent && task.AssignedUserId == user.Id) continue;
 
-            if (task.AssignedUserId == user.Id || task.PreviousUserId == user.Id)
-            {
-                continue;
-            }
+            if (task.AssignedUserId == user.Id || task.PreviousUserId == user.Id) continue;
 
             candidates.Add(user);
         }
 
-        if (candidates.Count == 0)
-        {
-            return false;
-        }
+        if (candidates.Count == 0) return false;
 
         var historySet = new HashSet<Guid>(task.AssignmentHistory);
         var unseenCandidates = candidates.Where(c => !historySet.Contains(c.Id)).ToList();
@@ -302,10 +246,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
 
     private void TryFinalizeTask(TaskItem task, IReadOnlyList<User> users)
     {
-        if (task.State == TaskState.Completed)
-        {
-            return;
-        }
+        if (task.State == TaskState.Completed) return;
 
         if (users.Count == 0)
         {

@@ -1,28 +1,23 @@
 namespace TaskRotationApi.Services;
 
 /// <summary>
-/// Periodically rotates the task assignments to fulfil the scheduling rules.
+///     Periodically rotates the task assignments to fulfil the scheduling rules.
 /// </summary>
 public class TaskRotationHostedService : BackgroundService
 {
-    private readonly TaskAssignmentService _service;
-    private readonly ILogger<TaskRotationHostedService> _logger;
     private readonly TimeSpan _interval;
+    private readonly ILogger<TaskRotationHostedService> _logger;
+    private readonly TaskAssignmentService _service;
 
-    public TaskRotationHostedService(TaskAssignmentService service, ILogger<TaskRotationHostedService> logger, IConfiguration configuration)
+    public TaskRotationHostedService(TaskAssignmentService service, ILogger<TaskRotationHostedService> logger,
+        IConfiguration configuration)
     {
         _service = service;
         _logger = logger;
 
         var seconds = configuration.GetValue<int?>("TaskRotation:IntervalSeconds") ?? 120;
-        if (seconds <= 0)
-        {
-            seconds = 120;
-        }
-        if (seconds < 5)
-        {
-            seconds = 5;
-        }
+        if (seconds <= 0) seconds = 120;
+        if (seconds < 5) seconds = 5;
 
         _interval = TimeSpan.FromSeconds(seconds);
     }
@@ -37,10 +32,7 @@ public class TaskRotationHostedService : BackgroundService
         try
         {
             using var timer = new PeriodicTimer(_interval);
-            while (await timer.WaitForNextTickAsync(stoppingToken))
-            {
-                SafeRotate();
-            }
+            while (await timer.WaitForNextTickAsync(stoppingToken)) SafeRotate();
         }
         catch (OperationCanceledException)
         {
@@ -54,13 +46,11 @@ public class TaskRotationHostedService : BackgroundService
         {
             var changes = _service.RotateAssignments();
             foreach (var change in changes)
-            {
                 _logger.LogInformation(
                     "Task {TaskId} reassigned from {FromUserId} to {ToUserId}",
                     change.TaskId,
                     change.FromUserId,
                     change.ToUserId);
-            }
         }
         catch (Exception ex)
         {

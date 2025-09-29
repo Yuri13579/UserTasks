@@ -9,7 +9,7 @@ namespace TaskRotationApi.Controllers;
 public class TasksController(TaskAssignmentService service) : ControllerBase
 {
     /// <summary>
-    /// Returns all tasks.
+    ///     Returns all tasks.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<TaskResponse>))]
@@ -19,7 +19,7 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
     }
 
     /// <summary>
-    /// Returns a single task by identifier.
+    ///     Returns a single task by identifier.
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TaskResponse))]
@@ -27,16 +27,13 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
     public ActionResult<TaskResponse> GetTask(Guid id)
     {
         var task = service.GetTask(id);
-        if (task is null)
-        {
-            return NotFound(new { message = "Task not found." });
-        }
+        if (task is null) return NotFound(new { message = "Task not found." });
 
         return Ok(task);
     }
 
     /// <summary>
-    /// Creates a new task.
+    ///     Creates a new task.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(TaskResponse))]
@@ -51,21 +48,27 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
         return CreatedAtAction(nameof(GetTask), new { id = result.Value!.Id }, result.Value);
     }
 
-    private static ActionResult<T> MapError<T>(ServiceResult result) => result.Code switch
+    private static ActionResult<T> MapError<T>(ServiceResult result)
     {
-        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
-        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
-        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
-        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
-        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
-    };
+        return result.Code switch
+        {
+            ErrorCode.Duplicate => new ConflictObjectResult(new { message = result.Error }),
+            ErrorCode.NotFound => new NotFoundObjectResult(new { message = result.Error }),
+            ErrorCode.Invalid => new BadRequestObjectResult(new { message = result.Error }),
+            ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+            _ => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
+        };
+    }
 
-    private static IActionResult MapError(ServiceResult result) => result.Code switch
+    private static IActionResult MapError(ServiceResult result)
     {
-        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
-        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
-        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
-        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
-        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
-    };
+        return result.Code switch
+        {
+            ErrorCode.Duplicate => new ConflictObjectResult(new { message = result.Error }),
+            ErrorCode.NotFound => new NotFoundObjectResult(new { message = result.Error }),
+            ErrorCode.Invalid => new BadRequestObjectResult(new { message = result.Error }),
+            ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+            _ => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
+        };
+    }
 }

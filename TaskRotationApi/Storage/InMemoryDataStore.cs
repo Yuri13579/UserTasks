@@ -45,10 +45,7 @@ public class InMemoryDataStore
 
     private void SeedInitialData()
     {
-        if (_users.Count != 0 || _tasks.Count != 0)
-        {
-            return;
-        }
+        if (_users.Count != 0 || _tasks.Count != 0) return;
 
         string[] defaultUsers =
         {
@@ -65,12 +62,10 @@ public class InMemoryDataStore
         };
 
         foreach (var name in defaultUsers)
-        {
             _users.Add(new User
             {
                 Name = name
             });
-        }
 
         string[] defaultTasks =
         {
@@ -97,11 +92,9 @@ public class InMemoryDataStore
         };
 
         foreach (var title in defaultTasks)
-        {
             _tasks.Add(new TaskItem
             {
                 Title = title
             });
-        }
     }
 }
