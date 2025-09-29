@@ -12,6 +12,7 @@ This repository contains a minimal ASP.NET Core Web API that manages users and t
    dotnet restore TaskRotationApi
    dotnet run --project TaskRotationApi
    ```
+
 4. The API listens on the default ASP.NET ports. When running locally you can browse the interactive Swagger UI at `https://localhost:7091/swagger` (or the HTTP port shown in the console output).
 
 ### Configuration

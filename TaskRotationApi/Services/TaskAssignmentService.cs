@@ -14,7 +14,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     public IReadOnlyCollection<UserResponse> GetUsers()
     {
         return store.Read((users, tasks) =>
-        {
+       {
             var response = new List<UserResponse>(users.Count);
             foreach (var user in users)
             {
@@ -28,7 +28,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     public UserResponse? GetUser(Guid id)
     {
         return store.Read((users, tasks) =>
-        {
+       {
             var user = users.FirstOrDefault(u => u.Id == id);
             return user is null ? null : MapUser(user, tasks);
         });
@@ -111,12 +111,12 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
 
     public IReadOnlyCollection<TaskResponse> GetTasks()
     {
-        return store.Read((users, tasks) => tasks.Select(t => MapTask(t, users)).ToList());
+       return store.Read((users, tasks) => tasks.Select(t => MapTask(t, users)).ToList());
     }
 
     public TaskResponse? GetTask(Guid id)
     {
-        return store.Read((users, tasks) =>
+       return store.Read((users, tasks) =>
         {
             var task = tasks.FirstOrDefault(t => t.Id == id);
             return task is null ? null : MapTask(task, users);
@@ -130,7 +130,6 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         {
             return (false, "Title is required.", null);
         }
-
         return store.Write((users, tasks) =>
         {
             if (tasks.Any(t => string.Equals(t.Title, trimmed, StringComparison.OrdinalIgnoreCase)))

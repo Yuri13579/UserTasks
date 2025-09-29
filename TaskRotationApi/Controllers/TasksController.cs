@@ -18,7 +18,7 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
     public ActionResult<TaskResponse> GetTask(Guid id)
     {
         var task = service.GetTask(id);
-        if (task is null)
+       if (task is null)
         {
             return NotFound();
         }
