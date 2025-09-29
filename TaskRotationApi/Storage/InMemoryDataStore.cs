@@ -12,6 +12,11 @@ public class InMemoryDataStore
     private readonly List<TaskItem> _tasks = [];
     private readonly List<User> _users = [];
 
+    public InMemoryDataStore()
+    {
+        SeedInitialData();
+    }
+
     public T Read<T>(Func<IReadOnlyList<User>, IReadOnlyList<TaskItem>, T> reader)
     {
         lock (_sync)
@@ -33,6 +38,68 @@ public class InMemoryDataStore
         lock (_sync)
         {
             return writer(_users, _tasks);
+        }
+    }
+
+    private void SeedInitialData()
+    {
+        if (_users.Count != 0 || _tasks.Count != 0)
+        {
+            return;
+        }
+
+        string[] defaultUsers =
+        {
+            "Liam",
+            "Noah",
+            "Oliver",
+            "Theodore",
+            "James",
+            "Henry",
+            "Mateo",
+            "Elijah",
+            "Lucas",
+            "William"
+        };
+
+        foreach (var name in defaultUsers)
+        {
+            _users.Add(new User
+            {
+                Name = name
+            });
+        }
+
+        string[] defaultTasks =
+        {
+            "Ride",
+            "Sit down",
+            "Win",
+            "Drink",
+            "Knit",
+            "Stand",
+            "Throw",
+            "Close",
+            "Open",
+            "Skip",
+            "Sleep",
+            "Cut",
+            "Eat",
+            "Cook",
+            "Sip",
+            "Fight",
+            "Play",
+            "Give",
+            "Dig",
+            "Bath"
+        };
+
+        foreach (var title in defaultTasks)
+        {
+            _tasks.Add(new TaskItem
+            {
+                Title = title
+            });
         }
     }
 }
