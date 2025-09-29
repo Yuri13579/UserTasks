@@ -14,7 +14,11 @@ public class TaskRotationHostedService : BackgroundService
         _service = service;
         _logger = logger;
 
-        var seconds = configuration.GetValue("TaskRotation:IntervalSeconds", 120);
+        var seconds = configuration.GetValue<int?>("TaskRotation:IntervalSeconds") ?? 120;
+        if (seconds <= 0)
+        {
+            seconds = 120;
+        }
         if (seconds < 5)
         {
             seconds = 5;
@@ -48,7 +52,15 @@ public class TaskRotationHostedService : BackgroundService
     {
         try
         {
-            _service.RotateAssignments();
+            var changes = _service.RotateAssignments();
+            foreach (var change in changes)
+            {
+                _logger.LogInformation(
+                    "Task {TaskId} reassigned from {FromUserId} to {ToUserId}",
+                    change.TaskId,
+                    change.FromUserId,
+                    change.ToUserId);
+            }
         }
         catch (Exception ex)
         {

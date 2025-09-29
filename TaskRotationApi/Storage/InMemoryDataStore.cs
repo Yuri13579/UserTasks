@@ -21,7 +21,9 @@ public class InMemoryDataStore
     {
         lock (_sync)
         {
-            return reader(_users, _tasks);
+            var usersCopy = _users.ToList();
+            var tasksCopy = _tasks.ToList();
+            return reader(usersCopy, tasksCopy);
         }
     }
 

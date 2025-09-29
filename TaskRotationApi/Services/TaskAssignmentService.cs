@@ -14,7 +14,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     public IReadOnlyCollection<UserResponse> GetUsers()
     {
         return store.Read((users, tasks) =>
-       {
+        {
             var response = new List<UserResponse>(users.Count);
             foreach (var user in users)
             {
@@ -28,25 +28,25 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     public UserResponse? GetUser(Guid id)
     {
         return store.Read((users, tasks) =>
-       {
+        {
             var user = users.FirstOrDefault(u => u.Id == id);
             return user is null ? null : MapUser(user, tasks);
         });
     }
 
-    public (bool Success, string? Error, UserResponse? User) CreateUser(string name)
+    public ServiceResult<UserResponse> CreateUser(string name)
     {
-        var trimmed = name.Trim();
+        var trimmed = name?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(trimmed))
         {
-            return (false, "Name is required.", null);
+            return ServiceResult<UserResponse>.Failure(ErrorCode.Invalid, "Name is required.");
         }
 
         return store.Write((users, tasks) =>
         {
             if (users.Any(u => string.Equals(u.Name, trimmed, StringComparison.OrdinalIgnoreCase)))
             {
-                return (false, "A user with the same name already exists.", (UserResponse?)null);
+                return ServiceResult<UserResponse>.Failure(ErrorCode.Duplicate, "A user with the same name already exists.");
             }
 
             var user = new User
@@ -56,85 +56,106 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
 
             users.Add(user);
 
-            // Adding a new user may free capacity for waiting tasks.
+            var newlyAssigned = 0;
             foreach (var task in tasks.Where(t => t.State != TaskState.Completed && t.AssignedUserId is null).ToList())
             {
-                TryAssignTask(task, users, tasks);
+                if (TryAssignTask(task, users, tasks))
+                {
+                    newlyAssigned++;
+                }
+
                 TryFinalizeTask(task, users);
             }
 
-            return (true, null, MapUser(user, tasks));
+            if (newlyAssigned > 0)
+            {
+                logger.LogInformation("Assigned {TaskCount} waiting tasks after adding user {UserId}", newlyAssigned, user.Id);
+            }
+
+            return ServiceResult<UserResponse>.SuccessResult(MapUser(user, tasks));
         });
     }
 
-    public (bool Success, string? Error) DeleteUser(Guid id)
+    public ServiceResult DeleteUser(Guid id)
     {
         return store.Write((users, tasks) =>
         {
             var user = users.FirstOrDefault(u => u.Id == id);
             if (user is null)
             {
-                return (false, "User not found.");
+                return ServiceResult.Failure(ErrorCode.NotFound, "User not found.");
             }
 
             users.Remove(user);
 
-            foreach (var task in tasks)
+            var waitingCount = 0;
+            foreach (var task in tasks.Where(t => t.State != TaskState.Completed))
             {
                 if (task.AssignedUserId == id)
                 {
                     task.AssignedUserId = null;
-                    if (task.PreviousUserId == id)
-                    {
-                        task.PreviousUserId = null;
-                    }
                     task.State = TaskState.Waiting;
+                    waitingCount++;
                 }
-                else if (task.PreviousUserId == id)
+
+                if (task.PreviousUserId == id)
                 {
                     task.PreviousUserId = null;
                 }
-
-                TryFinalizeTask(task, users);
             }
 
-            // Removing a user may also free capacity for waiting tasks if others are idle.
+            if (waitingCount > 0)
+            {
+                logger.LogInformation("User {UserId} deleted. {TaskCount} tasks returned to waiting state.", id, waitingCount);
+            }
+
+            var reassigned = 0;
             foreach (var task in tasks.Where(t => t.State != TaskState.Completed && t.AssignedUserId is null).ToList())
             {
-                TryAssignTask(task, users, tasks);
+                if (TryAssignTask(task, users, tasks))
+                {
+                    reassigned++;
+                }
+
                 TryFinalizeTask(task, users);
             }
 
-            return (true, null);
+            if (reassigned > 0)
+            {
+                logger.LogInformation("Reassigned {TaskCount} waiting tasks after deleting user {UserId}.", reassigned, id);
+            }
+
+            return ServiceResult.SuccessResult();
         });
     }
 
     public IReadOnlyCollection<TaskResponse> GetTasks()
     {
-       return store.Read((users, tasks) => tasks.Select(t => MapTask(t, users)).ToList());
+        return store.Read((users, tasks) => tasks.Select(t => MapTask(t, users)).ToList());
     }
 
     public TaskResponse? GetTask(Guid id)
     {
-       return store.Read((users, tasks) =>
+        return store.Read((users, tasks) =>
         {
             var task = tasks.FirstOrDefault(t => t.Id == id);
             return task is null ? null : MapTask(task, users);
         });
     }
 
-    public (bool Success, string? Error, TaskResponse? Task) CreateTask(string title)
+    public ServiceResult<TaskResponse> CreateTask(string title)
     {
-        var trimmed = title.Trim();
+        var trimmed = title?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(trimmed))
         {
-            return (false, "Title is required.", null);
+            return ServiceResult<TaskResponse>.Failure(ErrorCode.Invalid, "Title is required.");
         }
+
         return store.Write((users, tasks) =>
         {
             if (tasks.Any(t => string.Equals(t.Title, trimmed, StringComparison.OrdinalIgnoreCase)))
             {
-                return (false, "A task with the same title already exists.", (TaskResponse?)null);
+                return ServiceResult<TaskResponse>.Failure(ErrorCode.Duplicate, "A task with the same title already exists.");
             }
 
             var task = new TaskItem
@@ -147,28 +168,39 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
             TryAssignTask(task, users, tasks);
             TryFinalizeTask(task, users);
 
-            return (true, null, MapTask(task, users));
+            return ServiceResult<TaskResponse>.SuccessResult(MapTask(task, users));
         });
     }
 
     /// <summary>
     /// Called by the hosted service every two minutes.
     /// </summary>
-    public void RotateAssignments()
+    public IReadOnlyCollection<(Guid TaskId, Guid? FromUserId, Guid? ToUserId)> RotateAssignments()
     {
-        store.Write((users, tasks) =>
+        return store.Write((users, tasks) =>
         {
+            var changes = new List<(Guid TaskId, Guid? FromUserId, Guid? ToUserId)>();
+
             if (users.Count == 0)
             {
                 foreach (var task in tasks)
                 {
-                    if (task.State != TaskState.Completed)
+                    if (task.State == TaskState.Completed)
                     {
-                        task.AssignedUserId = null;
-                        task.State = TaskState.Waiting;
+                        continue;
                     }
+
+                    if (task.AssignedUserId is not null)
+                    {
+                        changes.Add((task.Id, task.AssignedUserId, null));
+                    }
+
+                    task.AssignedUserId = null;
+                    task.PreviousUserId = null;
+                    task.State = TaskState.Waiting;
                 }
-                return;
+
+                return changes;
             }
 
             foreach (var task in tasks)
@@ -178,28 +210,35 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
                     continue;
                 }
 
-                // The rotation rule requires every task to attempt a reassignment.
                 var previousAssignee = task.AssignedUserId;
                 var assigned = TryAssignTask(task, users, tasks, forceDifferent: true);
 
                 if (!assigned)
                 {
+                    if (previousAssignee is not null)
+                    {
+                        changes.Add((task.Id, previousAssignee, null));
+                    }
+
+                    task.PreviousUserId = previousAssignee;
                     task.AssignedUserId = null;
                     task.State = TaskState.Waiting;
                 }
                 else if (previousAssignee != task.AssignedUserId)
                 {
-                    logger.LogInformation("Task {TaskTitle} moved from {PreviousUser} to {CurrentUser}", task.Title, previousAssignee, task.AssignedUserId);
+                    changes.Add((task.Id, previousAssignee, task.AssignedUserId));
                 }
 
                 TryFinalizeTask(task, users);
             }
+
+            return changes;
         });
     }
 
     private bool TryAssignTask(TaskItem task, IReadOnlyList<User> users, IReadOnlyList<TaskItem> allTasks, bool forceDifferent = false)
     {
-        if (task.State == TaskState.Completed)
+        if (task.State == TaskState.Completed || users.Count == 0)
         {
             return false;
         }
@@ -289,7 +328,8 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     private UserResponse MapUser(User user, IReadOnlyList<TaskItem> tasks)
     {
         var activeCount = tasks.Count(t => t.AssignedUserId == user.Id && t.State != TaskState.Completed);
-        return new UserResponse(user.Id, user.Name, activeCount);
+        var totalAssigned = tasks.Count(t => t.AssignmentHistory.Contains(user.Id));
+        return new UserResponse(user.Id, user.Name, activeCount, totalAssigned);
     }
 
     private TaskResponse MapTask(TaskItem task, IReadOnlyList<User> users)
@@ -298,12 +338,15 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
             ? users.FirstOrDefault(u => u.Id == task.AssignedUserId.Value)?.Name
             : null;
 
+        var visitedUsersCount = task.AssignmentHistory.Distinct().Count();
+
         return new TaskResponse(
             task.Id,
             task.Title,
             task.State,
             task.AssignedUserId,
             assignedUserName,
+            visitedUsersCount,
             task.AssignmentHistory.AsReadOnly(),
             task.CreatedAt
         );

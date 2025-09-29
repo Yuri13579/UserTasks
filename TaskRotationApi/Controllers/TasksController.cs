@@ -8,30 +8,56 @@ namespace TaskRotationApi.Controllers;
 [Route("api/[controller]")]
 public class TasksController(TaskAssignmentService service) : ControllerBase
 {
+    /// <summary>
+    /// Returns all tasks.
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<TaskResponse>))]
     public ActionResult<IReadOnlyCollection<TaskResponse>> GetTasks()
     {
         return Ok(service.GetTasks());
     }
 
+    /// <summary>
+    /// Returns a single task by identifier.
+    /// </summary>
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TaskResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<TaskResponse> GetTask(Guid id)
     {
         var task = service.GetTask(id);
-        if (task is null) return NotFound();
+        if (task is null)
+        {
+            return NotFound(new { message = "Task not found." });
+        }
 
         return Ok(task);
     }
 
+    /// <summary>
+    /// Creates a new task.
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(TaskResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public ActionResult<TaskResponse> CreateTask([FromBody] CreateTaskRequest request)
     {
-        var (success, error, task) = service.CreateTask(request.Title);
-        if (!success)
-            return string.Equals(error, "A task with the same title already exists.", StringComparison.Ordinal)
-                ? Conflict(new { message = error })
-                : BadRequest(new { message = error });
+        var result = service.CreateTask(request.Title);
+        if (!result.Success)
+        {
+            return MapError(new ServiceResult(result.Success, result.Code, result.Error));
+        }
 
-        return CreatedAtAction(nameof(GetTask), new { id = task!.Id }, task);
+        return CreatedAtAction(nameof(GetTask), new { id = result.Value!.Id }, result.Value);
     }
+
+    private IActionResult MapError(ServiceResult result) => result.Code switch
+    {
+        ErrorCode.Duplicate => Conflict(new { message = result.Error }),
+        ErrorCode.NotFound => NotFound(new { message = result.Error }),
+        ErrorCode.Invalid or ErrorCode.LimitReached => BadRequest(new { message = result.Error }),
+        _ => BadRequest(new { message = result.Error ?? "An unexpected error occurred." })
+    };
 }

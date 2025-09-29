@@ -4,7 +4,9 @@ using TaskRotationApi.Models;
 namespace TaskRotationApi.Dtos;
 
 public record CreateTaskRequest(
-    [Required] [MinLength(1)] string Title
+    [Required]
+    [StringLength(100, MinimumLength = 1)]
+    string Title
 );
 
 public record TaskResponse(
@@ -13,6 +15,7 @@ public record TaskResponse(
     TaskState State,
     Guid? AssignedUserId,
     string? AssignedUserName,
+    int VisitedUsersCount,
     IReadOnlyCollection<Guid> AssignmentHistory,
     DateTimeOffset CreatedAt
 );
