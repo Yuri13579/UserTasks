@@ -5,14 +5,14 @@ This repository contains a minimal ASP.NET Core Web API that manages users and t
 ## Running the API
 
 1. Install the .NET 8 SDK.
-2. Restore dependencies and run the application:
+2. Open `TaskRotationApi.sln` in Visual Studio (or your preferred IDE) to explore and run the project, or use the CLI commands below from the repository root.
+3. Restore dependencies and run the application:
 
    ```bash
    dotnet restore TaskRotationApi
    dotnet run --project TaskRotationApi
    ```
-
-3. The API listens on the default ASP.NET ports. When running locally you can browse the interactive Swagger UI at `https://localhost:7091/swagger` (or the HTTP port shown in the console output).
+4. The API listens on the default ASP.NET ports. When running locally you can browse the interactive Swagger UI at `https://localhost:7091/swagger` (or the HTTP port shown in the console output).
 
 ### Configuration
 
