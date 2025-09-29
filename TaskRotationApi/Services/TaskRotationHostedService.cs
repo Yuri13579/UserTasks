@@ -17,7 +17,7 @@ public class TaskRotationHostedService : BackgroundService
         var seconds = configuration.GetValue("TaskRotation:IntervalSeconds", 120);
         if (seconds < 5)
         {
-            seconds = 5; // guard against accidentally disabling the loop.
+            seconds = 5;
         }
 
         _interval = TimeSpan.FromSeconds(seconds);
