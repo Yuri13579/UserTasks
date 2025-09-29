@@ -46,18 +46,26 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
     {
         var result = service.CreateTask(request.Title);
         if (!result.Success)
-        {
-            return MapError(new ServiceResult(result.Success, result.Code, result.Error));
-        }
+            return MapError<TaskResponse>(new ServiceResult(result.Success, result.Code, result.Error));
 
         return CreatedAtAction(nameof(GetTask), new { id = result.Value!.Id }, result.Value);
     }
 
-    private IActionResult MapError(ServiceResult result) => result.Code switch
+    private static ActionResult<T> MapError<T>(ServiceResult result) => result.Code switch
     {
-        ErrorCode.Duplicate => Conflict(new { message = result.Error }),
-        ErrorCode.NotFound => NotFound(new { message = result.Error }),
-        ErrorCode.Invalid or ErrorCode.LimitReached => BadRequest(new { message = result.Error }),
-        _ => BadRequest(new { message = result.Error ?? "An unexpected error occurred." })
+        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
+        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
+        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
+        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
+    };
+
+    private static IActionResult MapError(ServiceResult result) => result.Code switch
+    {
+        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
+        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
+        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
+        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
     };
 }

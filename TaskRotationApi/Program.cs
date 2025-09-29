@@ -1,4 +1,3 @@
-using System.IO;
 using System.Reflection;
 using TaskRotationApi.Services;
 using TaskRotationApi.Storage;
@@ -11,10 +10,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        options.IncludeXmlComments(xmlPath);
-    }
+    if (File.Exists(xmlPath)) options.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddSingleton<InMemoryDataStore>();

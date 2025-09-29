@@ -14,9 +14,7 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<UserResponse>))]
     public ActionResult<IReadOnlyCollection<UserResponse>> GetUsers()
-    {
-        return Ok(service.GetUsers());
-    }
+        => Ok(service.GetUsers());
 
     /// <summary>
     /// Returns a single user by identifier.
@@ -27,13 +25,9 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
     public ActionResult<UserResponse> GetUser(Guid id)
     {
         var user = service.GetUser(id);
-
-        if (user is null)
-        {
-            return NotFound(new { message = "User not found." });
-        }
-
-        return Ok(user);
+        return user is null
+            ? NotFound(new { message = "User not found." })
+            : Ok(user);
     }
 
     /// <summary>
@@ -49,7 +43,7 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
 
         if (!result.Success)
         {
-            return MapError(new ServiceResult(result.Success, result.Code, result.Error));
+            return MapError<UserResponse>(new ServiceResult(result.Success, result.Code, result.Error));
         }
 
         return CreatedAtAction(nameof(GetUser), new { id = result.Value!.Id }, result.Value);
@@ -64,7 +58,6 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
     public IActionResult DeleteUser(Guid id)
     {
         var result = service.DeleteUser(id);
-
         if (!result.Success)
         {
             return MapError(result);
@@ -73,11 +66,21 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
         return NoContent();
     }
 
-    private IActionResult MapError(ServiceResult result) => result.Code switch
+    private static ActionResult<T> MapError<T>(ServiceResult result) => result.Code switch
     {
-        ErrorCode.Duplicate => Conflict(new { message = result.Error }),
-        ErrorCode.NotFound => NotFound(new { message = result.Error }),
-        ErrorCode.Invalid or ErrorCode.LimitReached => BadRequest(new { message = result.Error }),
-        _ => BadRequest(new { message = result.Error ?? "An unexpected error occurred." })
+        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
+        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
+        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
+        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
+    };
+
+    private static IActionResult MapError(ServiceResult result) => result.Code switch
+    {
+        ErrorCode.Duplicate    => new ConflictObjectResult(new { message = result.Error }),
+        ErrorCode.NotFound     => new NotFoundObjectResult(new { message = result.Error }),
+        ErrorCode.Invalid      => new BadRequestObjectResult(new { message = result.Error }),
+        ErrorCode.LimitReached => new BadRequestObjectResult(new { message = result.Error }),
+        _                      => new BadRequestObjectResult(new { message = result.Error ?? "An unexpected error occurred." })
     };
 }
