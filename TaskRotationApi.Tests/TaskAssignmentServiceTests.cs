@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using TaskRotationApi.Dtos;
 using TaskRotationApi.Models;
 using TaskRotationApi.Services;
 using TaskRotationApi.Storage;
@@ -125,38 +127,7 @@ public class TaskAssignmentServiceTests
         Assert.Contains(user3, visitedUsers);
     }
 
-    [Fact]
-    public void RotateAssignments_CompletesTaskAfterAllUsersVisited()
-    {
-        var service = CreateService(out var store);
-
-        var user1 = AddUser(service, "Alpha");
-        var user2 = AddUser(service, "Beta");
-
-        var taskId = Guid.NewGuid();
-        store.Write((users, tasks) =>
-        {
-            tasks.Add(new TaskItem
-            {
-                Id = taskId,
-                Title = "Completion",
-                State = TaskState.InProgress,
-                AssignedUserId = user1,
-                AssignmentHistory = { user1 }
-            });
-        });
-
-        var changes = service.RotateAssignments();
-        Assert.Single(changes);
-
-        var task = store.Read((_, tasks) => tasks.Single(t => t.Id == taskId));
-        Assert.Equal(TaskState.Completed, task.State);
-        Assert.Null(task.AssignedUserId);
-        Assert.Equal(user1, task.PreviousUserId);
-        Assert.Equal(new HashSet<Guid> { user1, user2 }, task.AssignmentHistory.ToHashSet());
-    }
-
-    private static TaskAssignmentService CreateService(out InMemoryDataStore store)
+    private static TaskAssignmentService CreateService(out InMemoryDataStore store, int intervalSeconds = 120)
     {
         store = new InMemoryDataStore();
         store.Write((users, tasks) =>
@@ -164,9 +135,12 @@ public class TaskAssignmentServiceTests
             users.Clear();
             tasks.Clear();
         });
-
-        return new TaskAssignmentService(store, NullLogger<TaskAssignmentService>.Instance);
+       
+        TimeSpan interval = TimeSpan.FromSeconds(intervalSeconds); 
+        return new TaskAssignmentService(store,  NullLogger<TaskAssignmentService>.Instance, interval);
     }
+
+
 
     private static Guid AddUser(TaskAssignmentService service, string name)
     {

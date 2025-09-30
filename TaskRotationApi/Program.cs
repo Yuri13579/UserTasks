@@ -1,9 +1,12 @@
 using System.Reflection;
+using TaskRotationApi.Dtos;
 using TaskRotationApi.Services;
 using TaskRotationApi.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<TaskRotationOptions>(
+    builder.Configuration.GetSection("TaskRotation"));
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

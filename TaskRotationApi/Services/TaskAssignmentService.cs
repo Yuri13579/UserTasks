@@ -9,7 +9,7 @@ namespace TaskRotationApi.Services;
 ///     Contains all domain rules for creating users, tasks and orchestrating the
 ///     periodic reassignments.
 /// </summary>
-public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignmentService> logger)
+public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignmentService> logger,  TimeSpan interval)
 {
     public IReadOnlyCollection<UserResponse> GetUsers()
     {
@@ -242,7 +242,7 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
 
     private void TryFinalizeTask(TaskItem task, IReadOnlyList<User> users)
     {
-        if (task.State == TaskState.Completed) return;
+        if (task.State == TaskState.Completed || DateTimeOffset.UtcNow - task.CreatedAt < interval) return;
 
         if (users.Count == 0)
         {
