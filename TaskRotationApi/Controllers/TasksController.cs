@@ -6,6 +6,9 @@ namespace TaskRotationApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+/// <summary>
+///     Provides endpoints for inspecting and creating tasks in the rotation system.
+/// </summary>
 public class TasksController(TaskAssignmentService service) : ControllerBase
 {
     /// <summary>
@@ -48,6 +51,12 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
         return CreatedAtAction(nameof(GetTask), new { id = result.Value!.Id }, result.Value);
     }
 
+    /// <summary>
+    ///     Converts a <see cref="ServiceResult"/> to a typed HTTP response.
+    /// </summary>
+    /// <typeparam name="T">The expected payload type.</typeparam>
+    /// <param name="result">The operation outcome to translate.</param>
+    /// <returns>The HTTP representation of the <paramref name="result"/>.</returns>
     private static ActionResult<T> MapError<T>(ServiceResult result)
     {
         return result.Code switch
@@ -60,6 +69,11 @@ public class TasksController(TaskAssignmentService service) : ControllerBase
         };
     }
 
+    /// <summary>
+    ///     Converts a non-generic <see cref="ServiceResult"/> to an HTTP response.
+    /// </summary>
+    /// <param name="result">The operation outcome to translate.</param>
+    /// <returns>The HTTP representation of the <paramref name="result"/>.</returns>
     private static IActionResult MapError(ServiceResult result)
     {
         return result.Code switch

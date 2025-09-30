@@ -6,6 +6,9 @@ namespace TaskRotationApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+/// <summary>
+///     Exposes endpoints for managing users participating in task rotation.
+/// </summary>
 public class UsersController(TaskAssignmentService service) : ControllerBase
 {
     /// <summary>
@@ -63,6 +66,12 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    ///     Maps a <see cref="ServiceResult"/> to an HTTP response with a typed payload.
+    /// </summary>
+    /// <typeparam name="T">The expected response body type.</typeparam>
+    /// <param name="result">The operation outcome to convert.</param>
+    /// <returns>An HTTP result representing the provided <paramref name="result"/>.</returns>
     private static ActionResult<T> MapError<T>(ServiceResult result)
     {
         return result.Code switch
@@ -75,6 +84,11 @@ public class UsersController(TaskAssignmentService service) : ControllerBase
         };
     }
 
+    /// <summary>
+    ///     Maps a <see cref="ServiceResult"/> without payload to an HTTP response.
+    /// </summary>
+    /// <param name="result">The operation outcome to convert.</param>
+    /// <returns>An HTTP result representing the provided <paramref name="result"/>.</returns>
     private static IActionResult MapError(ServiceResult result)
     {
         return result.Code switch

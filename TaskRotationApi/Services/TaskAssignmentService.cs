@@ -6,11 +6,19 @@ using TaskRotationApi.Storage;
 namespace TaskRotationApi.Services;
 
 /// <summary>
-///     Contains all domain rules for creating users, tasks and orchestrating the
-///     periodic reassignments.
+///     Contains all domain rules for creating users, tasks and orchestrating the periodic reassignments.
 /// </summary>
+/// <remarks>
+///     Provides operations for querying and mutating tasks and users while respecting rotation rules.
+/// </remarks>
+/// <param name="store">Centralized storage abstraction for users and tasks.</param>
+/// <param name="logger">Logger used for diagnostic information.</param>
+/// <param name="interval">Minimum time a task must exist before it can be finalized.</param>
 public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignmentService> logger,  TimeSpan interval)
 {
+    /// <summary>
+    ///     Retrieves all users along with their assignment statistics.
+    /// </summary>
     public IReadOnlyCollection<UserResponse> GetUsers()
     {
         return store.Read((users, tasks) =>
@@ -22,6 +30,11 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
+    /// <summary>
+    ///     Retrieves a single user by identifier with assignment statistics.
+    /// </summary>
+    /// <param name="id">The identifier of the user to retrieve.</param>
+    /// <returns>The matching user response or <c>null</c> when not found.</returns>
     public UserResponse? GetUser(Guid id)
     {
         return store.Read((users, tasks) =>
@@ -31,6 +44,11 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
+    /// <summary>
+    ///     Creates a new user and triggers assignment of waiting tasks.
+    /// </summary>
+    /// <param name="name">The display name of the new user.</param>
+    /// <returns>The outcome of the creation operation.</returns>
     public ServiceResult<UserResponse> CreateUser(string name)
     {
         var trimmed = name?.Trim() ?? string.Empty;
@@ -66,6 +84,11 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
+    /// <summary>
+    ///     Deletes a user and releases any tasks assigned to them.
+    /// </summary>
+    /// <param name="id">The identifier of the user to remove.</param>
+    /// <returns>The outcome of the deletion operation.</returns>
     public ServiceResult DeleteUser(Guid id)
     {
         return store.Write((users, tasks) =>
@@ -108,11 +131,20 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
+    /// <summary>
+    ///     Retrieves all tasks including their assignment metadata.
+    /// </summary>
+    /// <returns>A collection of task responses.</returns>
     public IReadOnlyCollection<TaskResponse> GetTasks()
     {
         return store.Read((users, tasks) => tasks.Select(t => MapTask(t, users)).ToList());
     }
 
+    /// <summary>
+    ///     Retrieves a specific task by identifier.
+    /// </summary>
+    /// <param name="id">The identifier of the task to retrieve.</param>
+    /// <returns>The task response or <c>null</c> when not found.</returns>
     public TaskResponse? GetTask(Guid id)
     {
         return store.Read((users, tasks) =>
@@ -122,13 +154,19 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
+    /// <summary>
+    ///     Creates a new task and attempts to assign it immediately.
+    /// </summary>
+    /// <param name="title">The descriptive title of the task.</param>
+    /// <returns>The result of the creation operation.</returns>
     public ServiceResult<TaskResponse> CreateTask(string title)
         => store.Write((users, tasks) => CreateTaskCore(users, tasks, title));
 
 
     /// <summary>
-    ///     Called by the hosted service every two minutes.
+    ///     Called by the hosted service every two minutes to rotate assignments.
     /// </summary>
+    /// <returns>A collection describing changes to task assignments.</returns>
     public IReadOnlyCollection<(Guid TaskId, Guid? FromUserId, Guid? ToUserId)> RotateAssignments()
     {
         return store.Write((users, tasks) =>
@@ -178,6 +216,13 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
+    /// <summary>
+    ///     Implements the logic for creating a task within a write-locked operation.
+    /// </summary>
+    /// <param name="users">The mutable collection of users.</param>
+    /// <param name="tasks">The mutable collection of tasks.</param>
+    /// <param name="title">The task title to persist.</param>
+    /// <returns>The outcome of the creation operation.</returns>
     private ServiceResult<TaskResponse> CreateTaskCore(
         List<User> users, List<TaskItem> tasks, string title)
     {
@@ -196,6 +241,15 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
 
         return ServiceResult<TaskResponse>.SuccessResult(MapTask(task, users));
     }
+
+    /// <summary>
+    ///     Attempts to assign the provided task to a user that satisfies the rotation constraints.
+    /// </summary>
+    /// <param name="task">The task to assign.</param>
+    /// <param name="users">The available users.</param>
+    /// <param name="allTasks">All tasks for evaluating current load.</param>
+    /// <param name="forceDifferent">Whether the new assignment must differ from the current user.</param>
+    /// <returns><c>true</c> if the task was assigned; otherwise, <c>false</c>.</returns>
     private bool TryAssignTask(TaskItem task, IReadOnlyList<User> users, IReadOnlyList<TaskItem> allTasks,
         bool forceDifferent = false)
     {
@@ -240,6 +294,11 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         return true;
     }
 
+    /// <summary>
+    ///     Completes the provided task when it has visited all users or resets state if no users exist.
+    /// </summary>
+    /// <param name="task">The task to evaluate.</param>
+    /// <param name="users">The available users used for completion criteria.</param>
     private void TryFinalizeTask(TaskItem task, IReadOnlyList<User> users)
     {
         if (task.State == TaskState.Completed || DateTimeOffset.UtcNow - task.CreatedAt < interval) return;
@@ -262,6 +321,12 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         }
     }
 
+    /// <summary>
+    ///     Creates a response DTO describing a user and their task statistics.
+    /// </summary>
+    /// <param name="user">The user to map.</param>
+    /// <param name="tasks">The current task collection.</param>
+    /// <returns>The mapped <see cref="UserResponse"/>.</returns>
     private UserResponse MapUser(User user, IReadOnlyList<TaskItem> tasks)
     {
         var activeCount = tasks.Count(t => t.AssignedUserId == user.Id && t.State != TaskState.Completed);
@@ -269,6 +334,12 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         return new UserResponse(user.Id, user.Name, activeCount, totalAssigned);
     }
 
+    /// <summary>
+    ///     Creates a response DTO describing a task and its assignment history.
+    /// </summary>
+    /// <param name="task">The task to map.</param>
+    /// <param name="users">The user collection used to resolve names.</param>
+    /// <returns>The mapped <see cref="TaskResponse"/>.</returns>
     private TaskResponse MapTask(TaskItem task, IReadOnlyList<User> users)
     {
         var assignedUserName = task.AssignedUserId.HasValue
