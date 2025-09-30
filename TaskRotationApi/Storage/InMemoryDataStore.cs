@@ -38,58 +38,63 @@ public class InMemoryDataStore
         }
     }
 
-    private void SeedInitialData()
+    public bool SeedInitialData()
     {
-        if (_users.Count != 0 || _tasks.Count != 0) return;
-
-        string[] defaultUsers =
+        lock (_sync)
         {
-            "Liam",
-            "Noah",
-            "Oliver",
-            "Theodore",
-            "James",
-            "Henry",
-            "Mateo",
-            "Elijah",
-            "Lucas",
-            "William"
-        };
+            if (_users.Count != 0 || _tasks.Count != 0) return false;
 
-        foreach (var name in defaultUsers)
-            _users.Add(new User
+            string[] defaultUsers =
             {
-                Name = name
-            });
+                "Liam",
+                "Noah",
+                "Oliver",
+                "Theodore",
+                "James",
+                "Henry",
+                "Mateo",
+                "Elijah",
+                "Lucas",
+                "William"
+            };
 
-        string[] defaultTasks =
-        {
-            "Ride",
-            "Sit down",
-            "Win",
-            "Drink",
-            "Knit",
-            "Stand",
-            "Throw",
-            "Close",
-            "Open",
-            "Skip",
-            "Sleep",
-            "Cut",
-            "Eat",
-            "Cook",
-            "Sip",
-            "Fight",
-            "Play",
-            "Give",
-            "Dig",
-            "Bath"
-        };
+            foreach (var name in defaultUsers)
+                _users.Add(new User
+                {
+                    Name = name
+                });
 
-        foreach (var title in defaultTasks)
-            _tasks.Add(new TaskItem
+            string[] defaultTasks =
             {
-                Title = title
-            });
+                "Ride",
+                "Sit down",
+                "Win",
+                "Drink",
+                "Knit",
+                "Stand",
+                "Throw",
+                "Close",
+                "Open",
+                "Skip",
+                "Sleep",
+                "Cut",
+                "Eat",
+                "Cook",
+                "Sip",
+                "Fight",
+                "Play",
+                "Give",
+                "Dig",
+                "Bath"
+            };
+
+            foreach (var title in defaultTasks)
+                _tasks.Add(new TaskItem
+                {
+                    Title = title
+                });
+
+            return true;
+        }
     }
 }
