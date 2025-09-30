@@ -64,3 +64,4 @@ nunit-*.xml
 *.manifest
 *.v2
 *.suo
+*.bin
