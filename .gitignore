@@ -60,3 +60,5 @@ nunit-*.xml
 .vs/TaskRotationApi/CopilotIndices/17.14.670.39694/SemanticSymbols.db
 .vs/TaskRotationApi/CopilotIndices/17.14.670.39694/SemanticSymbols.db-shm
 *.vsidx
+*.testlog
+*.manifest
