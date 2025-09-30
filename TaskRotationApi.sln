@@ -1,0 +1,27 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34309.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskRotationApi", "TaskRotationApi\TaskRotationApi.csproj", "{3CCE0407-9F3F-48E1-AA47-00043ACB5B51}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskRotationApi.Tests", "TaskRotationApi.Tests\TaskRotationApi.Tests.csproj", "{05733456-0945-4A07-9B95-8F249F93DCE6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3CCE0407-9F3F-48E1-AA47-00043ACB5B51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CCE0407-9F3F-48E1-AA47-00043ACB5B51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CCE0407-9F3F-48E1-AA47-00043ACB5B51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CCE0407-9F3F-48E1-AA47-00043ACB5B51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05733456-0945-4A07-9B95-8F249F93DCE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05733456-0945-4A07-9B95-8F249F93DCE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05733456-0945-4A07-9B95-8F249F93DCE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05733456-0945-4A07-9B95-8F249F93DCE6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
