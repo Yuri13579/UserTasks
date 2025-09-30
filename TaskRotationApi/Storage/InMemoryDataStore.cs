@@ -12,6 +12,12 @@ public class InMemoryDataStore
     private readonly List<TaskItem> _tasks = [];
     private readonly List<User> _users = [];
 
+    /// <summary>
+    ///     Reads data from the store using a delegate while holding a lock.
+    /// </summary>
+    /// <typeparam name="T">The type returned by the delegate.</typeparam>
+    /// <param name="reader">The function that consumes copies of the current users and tasks.</param>
+    /// <returns>The value returned by the <paramref name="reader"/> delegate.</returns>
     public T Read<T>(Func<IReadOnlyList<User>, IReadOnlyList<TaskItem>, T> reader)
     {
         lock (_sync)
@@ -22,6 +28,10 @@ public class InMemoryDataStore
         }
     }
 
+    /// <summary>
+    ///     Executes a write action under a lock to mutate the underlying collections.
+    /// </summary>
+    /// <param name="writer">The action that performs updates on the shared collections.</param>
     public void Write(Action<List<User>, List<TaskItem>> writer)
     {
         lock (_sync)
@@ -30,6 +40,12 @@ public class InMemoryDataStore
         }
     }
 
+    /// <summary>
+    ///     Executes a write function under a lock and returns its result.
+    /// </summary>
+    /// <typeparam name="T">The type returned by the <paramref name="writer"/> delegate.</typeparam>
+    /// <param name="writer">The function that performs updates on the shared collections.</param>
+    /// <returns>The value produced by the <paramref name="writer"/> delegate.</returns>
     public T Write<T>(Func<List<User>, List<TaskItem>, T> writer)
     {
         lock (_sync)
@@ -38,6 +54,10 @@ public class InMemoryDataStore
         }
     }
 
+    /// <summary>
+    ///     Seeds the store with a predefined set of users and tasks if empty.
+    /// </summary>
+    /// <returns><c>true</c> if data was seeded; otherwise, <c>false</c>.</returns>
     public bool SeedInitialData()
     {
         lock (_sync)

@@ -5,6 +5,9 @@ namespace TaskRotationApi.Controllers;
 
 [ApiController]
 [Route("api/seedTestData")]
+/// <summary>
+///     Offers an endpoint for populating the in-memory store with sample data.
+/// </summary>
 public class SeedTestDataController(InMemoryDataStore dataStore) : ControllerBase
 {
     /// <summary>
