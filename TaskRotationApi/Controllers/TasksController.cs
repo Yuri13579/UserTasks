@@ -9,6 +9,7 @@ namespace TaskRotationApi.Controllers;
 /// <summary>
 ///     Provides endpoints for inspecting and creating tasks in the rotation system.
 /// </summary>
+/// <param name="service">Domain service used for task operations.</param>
 public class TasksController(TaskAssignmentService service) : ControllerBase
 {
     /// <summary>

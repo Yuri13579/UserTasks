@@ -9,6 +9,7 @@ namespace TaskRotationApi.Controllers;
 /// <summary>
 ///     Exposes endpoints for managing users participating in task rotation.
 /// </summary>
+/// <param name="service">Domain service used for user operations.</param>
 public class UsersController(TaskAssignmentService service) : ControllerBase
 {
     /// <summary>

@@ -8,6 +8,7 @@ namespace TaskRotationApi.Controllers;
 /// <summary>
 ///     Offers an endpoint for populating the in-memory store with sample data.
 /// </summary>
+/// <param name="dataStore">In-memory storage used to seed default data.</param>
 public class SeedTestDataController(InMemoryDataStore dataStore) : ControllerBase
 {
     /// <summary>

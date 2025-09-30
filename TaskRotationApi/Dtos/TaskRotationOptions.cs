@@ -10,3 +10,4 @@ public sealed class TaskRotationOptions
     /// </summary>
     public int IntervalSeconds { get; set; } = 120;
 }
+
