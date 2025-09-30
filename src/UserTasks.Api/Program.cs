@@ -6,6 +6,7 @@ using UserTasks.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<InMemoryDataStore>();
+builder.Services.AddSingleton<TaskAssignmentService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
