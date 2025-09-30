@@ -19,7 +19,7 @@ public enum ErrorCode
 public readonly record struct ServiceResult<T>(bool Success, ErrorCode Code, string? Error, T? Value)
 {
     /// <summary>
-    ///     Creates a successful <see cref="ServiceResult{T}"/>.
+    ///     Creates a successful <see cref="ServiceResult{T}" />.
     /// </summary>
     /// <param name="value">The resulting value of the operation.</param>
     /// <returns>A successful service result containing the provided value.</returns>
@@ -29,7 +29,7 @@ public readonly record struct ServiceResult<T>(bool Success, ErrorCode Code, str
     }
 
     /// <summary>
-    ///     Creates a failed <see cref="ServiceResult{T}"/>.
+    ///     Creates a failed <see cref="ServiceResult{T}" />.
     /// </summary>
     /// <param name="code">The error code describing the failure.</param>
     /// <param name="message">A human readable message explaining the failure.</param>
@@ -46,7 +46,7 @@ public readonly record struct ServiceResult<T>(bool Success, ErrorCode Code, str
 public readonly record struct ServiceResult(bool Success, ErrorCode Code, string? Error)
 {
     /// <summary>
-    ///     Creates a successful <see cref="ServiceResult"/>.
+    ///     Creates a successful <see cref="ServiceResult" />.
     /// </summary>
     /// <returns>A successful service result.</returns>
     public static ServiceResult SuccessResult()
@@ -55,7 +55,7 @@ public readonly record struct ServiceResult(bool Success, ErrorCode Code, string
     }
 
     /// <summary>
-    ///     Creates a failed <see cref="ServiceResult"/>.
+    ///     Creates a failed <see cref="ServiceResult" />.
     /// </summary>
     /// <param name="code">The error code describing the failure.</param>
     /// <param name="message">A human readable message explaining the failure.</param>
