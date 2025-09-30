@@ -12,11 +12,6 @@ public class InMemoryDataStore
     private readonly List<TaskItem> _tasks = [];
     private readonly List<User> _users = [];
 
-    public InMemoryDataStore()
-    {
-        SeedInitialData();
-    }
-
     public T Read<T>(Func<IReadOnlyList<User>, IReadOnlyList<TaskItem>, T> reader)
     {
         lock (_sync)

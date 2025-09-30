@@ -123,30 +123,8 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
     }
 
     public ServiceResult<TaskResponse> CreateTask(string title)
-    {
-        var trimmed = title?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(trimmed))
-            return ServiceResult<TaskResponse>.Failure(ErrorCode.Invalid, "Title is required.");
+        => store.Write((users, tasks) => CreateTaskCore(users, tasks, title));
 
-        return store.Write((users, tasks) =>
-        {
-            if (tasks.Any(t => string.Equals(t.Title, trimmed, StringComparison.OrdinalIgnoreCase)))
-                return ServiceResult<TaskResponse>.Failure(ErrorCode.Duplicate,
-                    "A task with the same title already exists.");
-
-            var task = new TaskItem
-            {
-                Title = trimmed
-            };
-
-            tasks.Add(task);
-
-            TryAssignTask(task, users, tasks);
-            TryFinalizeTask(task, users);
-
-            return ServiceResult<TaskResponse>.SuccessResult(MapTask(task, users));
-        });
-    }
 
     /// <summary>
     ///     Called by the hosted service every two minutes.
@@ -200,6 +178,24 @@ public class TaskAssignmentService(InMemoryDataStore store, ILogger<TaskAssignme
         });
     }
 
+    private ServiceResult<TaskResponse> CreateTaskCore(
+        List<User> users, List<TaskItem> tasks, string title)
+    {
+        var trimmed = title?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return ServiceResult<TaskResponse>.Failure(ErrorCode.Invalid, "Title is required.");
+
+        if (tasks.Any(t => string.Equals(t.Title, trimmed, StringComparison.OrdinalIgnoreCase)))
+            return ServiceResult<TaskResponse>.Failure(ErrorCode.Duplicate, "A task with the same title already exists.");
+
+        var task = new TaskItem { Title = trimmed };
+        tasks.Add(task);
+
+        TryAssignTask(task, users, tasks);
+        TryFinalizeTask(task, users);
+
+        return ServiceResult<TaskResponse>.SuccessResult(MapTask(task, users));
+    }
     private bool TryAssignTask(TaskItem task, IReadOnlyList<User> users, IReadOnlyList<TaskItem> allTasks,
         bool forceDifferent = false)
     {
