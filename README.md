@@ -9,10 +9,10 @@ This ASP.NET Core Web API manages users and tasks that automatically rotate betw
 
    ```bash
    dotnet restore TaskRotationApi
-   dotnet run --project TaskRotationApi
+   dotnet run
    ```
 
-3. The API is available immediately at the printed HTTP/HTTPS URLs. Swagger UI is always enabled at `https://localhost:7091/swagger` (adjust the port to match the console output).
+3. The API is available immediately at the printed HTTP/HTTPS URLs. Swagger UI is always enabled at `https://localhost:7091/swagger/index.html` (adjust the port to match the console output).
 
 ## Configuration
 
